@@ -1,0 +1,298 @@
+{
+  "entities": {
+    "Tenant": {
+      "title": "Tenant",
+      "description": "Represents a repair shop (tenant).",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Name of the repair shop" },
+        "plan": { "type": "string", "enum": ["CORE", "PRO", "ENTERPRISE"] },
+        "planExpiresAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "plan", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile for authentication and authorization.",
+      "type": "object",
+      "properties": {
+        "tenantId": { "type": "string", "description": "ID of the tenant this user belongs to" },
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["SuperAdmin", "Gestor", "Mecanico", "Atendimento"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["tenantId", "email", "name", "role", "createdAt"]
+    },
+    "Invitation": {
+      "title": "Invitation",
+      "description": "Invitation for a user to join a tenant.",
+      "type": "object",
+      "properties": {
+        "tenantId": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["tenantId", "email", "role", "status", "createdAt"]
+    },
+    "AccessRequest": {
+      "title": "AccessRequest",
+      "description": "Request from a user to access the platform.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "name", "status", "createdAt"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "A customer of the repair shop.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "document": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "phone", "createdAt"]
+    },
+    "Vehicle": {
+      "title": "Vehicle",
+      "description": "A vehicle belonging to a customer.",
+      "type": "object",
+      "properties": {
+        "customerId": { "type": "string" },
+        "make": { "type": "string" },
+        "model": { "type": "string" },
+        "year": { "type": "number" },
+        "plate": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerId", "make", "model", "createdAt"]
+    },
+    "Service": {
+      "title": "Service",
+      "description": "A service offered by the repair shop.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "defaultPrice": { "type": "number" },
+        "recallMonths": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "category", "defaultPrice", "createdAt"]
+    },
+    "Part": {
+      "title": "Part",
+      "description": "A part in the repair shop's inventory.",
+      "type": "object",
+      "properties": {
+        "sku": { "type": "string" },
+        "name": { "type": "string" },
+        "unit": { "type": "string" },
+        "cost": { "type": "number" },
+        "price": { "type": "number" },
+        "stockQty": { "type": "number" },
+        "minQty": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sku", "name", "unit", "cost", "price", "stockQty", "minQty", "createdAt"]
+    },
+    "Quote": {
+      "title": "Quote",
+      "description": "A quote for a customer's vehicle.",
+      "type": "object",
+      "properties": {
+        "customerId": { "type": "string" },
+        "vehicleId": { "type": "string" },
+        "status": { "type": "string" },
+        "totalAmount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerId", "vehicleId", "status", "totalAmount", "createdAt"]
+    },
+    "QuoteItem": {
+      "title": "QuoteItem",
+      "description": "An item (service or part) in a quote.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["service", "part"] },
+        "refId": { "type": "string" },
+        "qty": { "type": "number" },
+        "unitPrice": { "type": "number" }
+      },
+      "required": ["type", "refId", "qty", "unitPrice"]
+    },
+    "WorkOrder": {
+      "title": "WorkOrder",
+      "description": "An approved quote converted to a work order.",
+      "type": "object",
+      "properties": {
+        "customerId": { "type": "string" },
+        "vehicleId": { "type": "string" },
+        "status": { "type": "string" },
+        "totalAmount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerId", "vehicleId", "status", "totalAmount", "createdAt"]
+    },
+    "WhatsappNumber": {
+      "title": "WhatsappNumber",
+      "description": "A WhatsApp number connected to the platform.",
+      "type": "object",
+      "properties": {
+        "tenantId": { "type": "string" },
+        "number": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["tenantId", "number", "status", "createdAt"]
+    },
+    "WhatsappConversation": {
+      "title": "WhatsappConversation",
+      "description": "A WhatsApp conversation with a contact.",
+      "type": "object",
+      "properties": {
+        "tenantId": { "type": "string" },
+        "contactPhone": { "type": "string" },
+        "contactName": { "type": "string" },
+        "status": { "type": "string" },
+        "lastMessageAt": { "type": "string", "format": "date-time" },
+        "botActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["tenantId", "contactPhone", "contactName", "status", "botActive", "createdAt"]
+    },
+    "WhatsappMessage": {
+      "title": "WhatsappMessage",
+      "description": "A message within a WhatsApp conversation.",
+      "type": "object",
+      "properties": {
+        "direction": { "type": "string", "enum": ["inbound", "outbound"] },
+        "content": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["direction", "content", "status", "createdAt"]
+    },
+    "Lead": {
+      "title": "Lead",
+      "description": "A potential customer lead.",
+      "type": "object",
+      "properties": {
+        "contactName": { "type": "string" },
+        "phone": { "type": "string" },
+        "vehicleHint": { "type": "string" },
+        "source": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["contactName", "phone", "source", "status", "createdAt"]
+    },
+    "PlatformLead": {
+      "title": "PlatformLead",
+      "description": "A lead generated from the platform landing page.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "establishment": { "type": "string" },
+        "sellerCode": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "whatsapp", "establishment", "status", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "A notification for a tenant user.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type", "title", "message", "read", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/platform_leads/{leadId}": {
+      "schema": { "$ref": "#/entities/PlatformLead" },
+      "description": "Leads generated from the platform landing page"
+    },
+    "/access_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/AccessRequest" },
+      "description": "Requests to access the platform"
+    },
+    "/invitations/{invitationId}": {
+      "schema": { "$ref": "#/entities/Invitation" },
+      "description": "Invitations to join a tenant"
+    },
+    "/tenants/{tenantId}": {
+      "schema": { "$ref": "#/entities/Tenant" },
+      "description": "Tenant data"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles"
+    },
+    "/whatsapp_numbers/{numberId}": {
+      "schema": { "$ref": "#/entities/WhatsappNumber" },
+      "description": "Whatsapp numbers"
+    },
+    "/whatsapp_conversations/{conversationId}": {
+      "schema": { "$ref": "#/entities/WhatsappConversation" },
+      "description": "Whatsapp conversations"
+    },
+    "/whatsapp_conversations/{conversationId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/WhatsappMessage" },
+      "description": "Whatsapp messages"
+    },
+    "/tenants/{tenantId}/customers/{customerId}": {
+      "schema": { "$ref": "#/entities/Customer" },
+      "description": "Tenant customers"
+    },
+    "/tenants/{tenantId}/vehicles/{vehicleId}": {
+      "schema": { "$ref": "#/entities/Vehicle" },
+      "description": "Tenant vehicles"
+    },
+    "/tenants/{tenantId}/services/{serviceId}": {
+      "schema": { "$ref": "#/entities/Service" },
+      "description": "Tenant services"
+    },
+    "/tenants/{tenantId}/parts/{partId}": {
+      "schema": { "$ref": "#/entities/Part" },
+      "description": "Tenant parts"
+    },
+    "/tenants/{tenantId}/quotes/{quoteId}": {
+      "schema": { "$ref": "#/entities/Quote" },
+      "description": "Tenant quotes"
+    },
+    "/tenants/{tenantId}/workOrders/{workOrderId}": {
+      "schema": { "$ref": "#/entities/WorkOrder" },
+      "description": "Tenant work orders"
+    },
+    "/tenants/{tenantId}/leads/{leadId}": {
+      "schema": { "$ref": "#/entities/Lead" },
+      "description": "Tenant leads"
+    },
+    "/tenants/{tenantId}/leads/{leadId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/WhatsappMessage" },
+      "description": "Tenant lead messages"
+    },
+    "/tenants/{tenantId}/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "Tenant notifications"
+    }
+  }
+}

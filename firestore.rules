@@ -1,0 +1,302 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (Firebase Auth UID)
+    // Fields:
+    //   - tenantId: string (optional)
+    //   - email: string (required)
+    //   - name: string (required)
+    //   - role: string (required, enum: SuperAdmin, Gestor, Mecanico, Atendimento)
+    //   - updatedAt: string (optional)
+    //   - unauthorized: boolean (optional)
+    //
+    // Collection: tenants
+    // Document ID: tenantId
+    // Fields:
+    //   - name: string (required)
+    //   - plan: string (optional)
+    //   - createdAt: string (optional)
+    //   - mecanicoPermissions: map (optional)
+    //
+    // Collection: platform_leads
+    // Document ID: auto
+    // Fields:
+    //   - name: string (required)
+    //   - email: string (required)
+    //   - phone: string (optional)
+    //   - company: string (optional)
+    //   - createdAt: timestamp/string (optional)
+    //
+    // Collection: access_requests
+    // Document ID: auto
+    // Fields:
+    //   - email: string (required)
+    //   - name: string (required)
+    //   - status: string (required)
+    //   - createdAt: timestamp/string (optional)
+    //
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isHardcodedAdminEmail() {
+      return isAuthenticated() && (
+        request.auth.token.email == 'stosto2025@gmail.com' ||
+        request.auth.token.email == 'harddisk1911@gmail.com' ||
+        request.auth.token.email == 'hardteamsolutions@gmail.com' ||
+        request.auth.token.email == 'pedro.henriquesouza@discente.univasf.edu.br'
+      ) && request.auth.token.email_verified == true;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && (
+        isHardcodedAdminEmail() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'SuperAdmin')
+      );
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isUserInTenant(tenantId) {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             getUserData().tenantId == tenantId;
+    }
+    
+    function isGestorInTenant(tenantId) {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             getUserData().tenantId == tenantId &&
+             getUserData().role == 'Gestor';
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+
+    function isValidOptionalString(field, minLen, maxLen) {
+      return !(field in request.resource.data) ||
+             (request.resource.data[field] is string &&
+              request.resource.data[field].size() >= minLen &&
+              request.resource.data[field].size() <= maxLen);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser() {
+      return hasRequiredFields(['email', 'name']) &&
+             validStringLength('email', 3, 100) &&
+             validStringLength('name', 1, 100) &&
+             isValidOptionalString('role', 1, 50) &&
+             isValidOptionalString('tenantId', 1, 100);
+    }
+
+    function isValidTenant() {
+      return hasRequiredFields(['name']) &&
+             validStringLength('name', 1, 100) &&
+             isValidOptionalString('plan', 1, 50);
+    }
+
+    function isValidPlatformLead() {
+      return hasRequiredFields(['name', 'email']) &&
+             validStringLength('name', 1, 100) &&
+             validStringLength('email', 3, 100) &&
+             isValidOptionalString('phone', 1, 50) &&
+             isValidOptionalString('company', 1, 100);
+    }
+
+    function isValidAccessRequest() {
+      return hasRequiredFields(['email', 'name', 'status']) &&
+             validStringLength('email', 3, 100) &&
+             validStringLength('name', 1, 100) &&
+             validStringLength('status', 1, 50);
+    }
+
+    function isValidInvitation() {
+      return hasRequiredFields(['tenantId', 'email', 'role']) &&
+             validStringLength('tenantId', 1, 100) &&
+             validStringLength('email', 3, 100) &&
+             validStringLength('role', 1, 50) &&
+             isValidOptionalString('name', 1, 100);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    // Server Secrets (for backend authentication)
+    match /server_secrets/{secretId} {
+      allow read, write: if isSuperAdmin();
+    }
+
+    // Invitations collection
+    match /invitations/{email} {
+      allow read: if isSuperAdmin() || (isAuthenticated() && request.auth.token.email.lower() == email) || (
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        getUserData().role == 'Gestor' &&
+        getUserData().tenantId == resource.data.tenantId
+      );
+      allow create: if isValidInvitation() && (isSuperAdmin() || (
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        getUserData().role == 'Gestor' &&
+        getUserData().tenantId == request.resource.data.tenantId
+      ));
+      allow update: if isValidInvitation() && (isSuperAdmin() || (
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        getUserData().role == 'Gestor' &&
+        getUserData().tenantId == request.resource.data.tenantId
+      ));
+      allow delete: if isSuperAdmin() || (isAuthenticated() && request.auth.token.email.lower() == email) || (
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        getUserData().role == 'Gestor' &&
+        getUserData().tenantId == resource.data.tenantId
+      );
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId ||
+        request.auth.token.email == resource.data.email ||
+        isSuperAdmin() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         getUserData().role == 'Gestor' &&
+         getUserData().tenantId == resource.data.tenantId)
+      );
+
+      allow create: if isAuthenticated() && isValidUser() && (
+        isSuperAdmin() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         getUserData().role == 'Gestor' &&
+         getUserData().tenantId == request.resource.data.tenantId &&
+         (!('role' in request.resource.data) || request.resource.data.role in ['Mecanico', 'Atendimento', 'Gestor'])) ||
+        (request.auth.uid == userId && (
+          (isHardcodedAdminEmail() && request.resource.data.role == 'SuperAdmin') ||
+          (exists(/databases/$(database)/documents/invitations/$(request.auth.token.email.lower())) &&
+           request.resource.data.tenantId == get(/databases/$(database)/documents/invitations/$(request.auth.token.email.lower())).data.tenantId &&
+           request.resource.data.role == get(/databases/$(database)/documents/invitations/$(request.auth.token.email.lower())).data.role) ||
+           (!('role' in request.resource.data) || request.resource.data.role != 'SuperAdmin')
+        ))
+      );
+
+      allow update: if isAuthenticated() && isValidUser() && (
+        isSuperAdmin() ||
+        (request.auth.uid == userId && (
+          (isHardcodedAdminEmail() && request.resource.data.role == 'SuperAdmin') ||
+          (!('role' in request.resource.data) || request.resource.data.role == resource.data.role)
+        )) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         getUserData().role == 'Gestor' &&
+         getUserData().tenantId == resource.data.tenantId &&
+         (!('role' in request.resource.data) || request.resource.data.role != 'SuperAdmin'))
+      );
+
+      allow delete: if isAuthenticated() && (
+        isSuperAdmin() ||
+        request.auth.token.email == resource.data.email ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         getUserData().role == 'Gestor' &&
+         getUserData().tenantId == resource.data.tenantId)
+      );
+    }
+
+    // Tenants collection
+    match /tenants/{tenantId} {
+      allow read: if isSuperAdmin() || isUserInTenant(tenantId);
+      allow create: if isValidTenant() && (isSuperAdmin() || (isHardcodedAdminEmail() && tenantId == 't-superadmin'));
+      allow update: if isValidTenant() && (isSuperAdmin() || isGestorInTenant(tenantId) || (isHardcodedAdminEmail() && tenantId == 't-superadmin'));
+      allow delete: if isSuperAdmin();
+      
+      // Subcollections within a tenant
+      match /{document=**} {
+        // Basic validation for subcollections - ensuring size limits on strings to prevent DoS
+        function isValidSubDoc() {
+          return !('name' in request.resource.data) || (request.resource.data.name is string && request.resource.data.name.size() <= 200);
+        }
+        allow read: if isSuperAdmin() || isUserInTenant(tenantId);
+        allow create: if isValidSubDoc() && (isSuperAdmin() || isUserInTenant(tenantId));
+        allow update: if isValidSubDoc() && (isSuperAdmin() || isUserInTenant(tenantId));
+        allow delete: if isSuperAdmin() || isUserInTenant(tenantId);
+      }
+    }
+
+    // Root collections for WhatsApp that need tenant isolation
+    match /whatsapp_numbers/{numberId} {
+      function isValidWaNumber() {
+        return hasRequiredFields(['tenantId', 'number']) &&
+               validStringLength('tenantId', 1, 100) &&
+               validStringLength('number', 1, 50);
+      }
+      allow read: if isAuthenticated() && (isSuperAdmin() || resource.data.tenantId == getUserData().tenantId);
+      allow create: if isAuthenticated() && isValidWaNumber() && (isSuperAdmin() || request.resource.data.tenantId == getUserData().tenantId);
+      allow update: if isAuthenticated() && isValidWaNumber() && (isSuperAdmin() || (resource.data.tenantId == getUserData().tenantId && request.resource.data.tenantId == getUserData().tenantId));
+      allow delete: if isAuthenticated() && (isSuperAdmin() || resource.data.tenantId == getUserData().tenantId);
+    }
+
+    match /whatsapp_conversations/{convId} {
+      function isValidWaConv() {
+        return hasRequiredFields(['tenantId', 'customer_phone']) &&
+               validStringLength('tenantId', 1, 100) &&
+               validStringLength('customer_phone', 1, 50);
+      }
+      allow read: if isAuthenticated() && (isSuperAdmin() || resource.data.tenantId == getUserData().tenantId);
+      allow create: if isAuthenticated() && isValidWaConv() && (isSuperAdmin() || request.resource.data.tenantId == getUserData().tenantId);
+      allow update: if isAuthenticated() && isValidWaConv() && (isSuperAdmin() || (resource.data.tenantId == getUserData().tenantId && request.resource.data.tenantId == getUserData().tenantId));
+      allow delete: if isAuthenticated() && (isSuperAdmin() || resource.data.tenantId == getUserData().tenantId);
+      
+      match /messages/{messageId} {
+        function isValidWaMessage() {
+          return hasRequiredFields(['text', 'sender']) &&
+                 validStringLength('text', 1, 5000) &&
+                 validStringLength('sender', 1, 100);
+        }
+        allow read: if isAuthenticated() && (isSuperAdmin() || get(/databases/$(database)/documents/whatsapp_conversations/$(convId)).data.tenantId == getUserData().tenantId);
+        allow create: if isAuthenticated() && isValidWaMessage() && (isSuperAdmin() || get(/databases/$(database)/documents/whatsapp_conversations/$(convId)).data.tenantId == getUserData().tenantId);
+        allow update: if isAuthenticated() && isValidWaMessage() && (isSuperAdmin() || get(/databases/$(database)/documents/whatsapp_conversations/$(convId)).data.tenantId == getUserData().tenantId);
+        allow delete: if isAuthenticated() && (isSuperAdmin() || get(/databases/$(database)/documents/whatsapp_conversations/$(convId)).data.tenantId == getUserData().tenantId);
+      }
+    }
+
+    // Platform Leads
+    match /platform_leads/{leadId} {
+      allow create: if isValidPlatformLead(); // Anyone can submit a lead
+      allow read, update, delete: if isSuperAdmin(); // Only SuperAdmins can manage leads
+    }
+
+    // Access Requests
+    match /access_requests/{requestId} {
+      allow create: if isAuthenticated() && isValidAccessRequest();
+      allow read, update, delete: if isSuperAdmin();
+    }
+  }
+}
