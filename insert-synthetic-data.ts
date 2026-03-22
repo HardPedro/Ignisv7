@@ -21,17 +21,17 @@ const vehicles = [
 ];
 
 const services = [
-  { name: 'Troca de Óleo', category: 'Manutenção', defaultPrice: 150, recallMonths: 6 },
-  { name: 'Alinhamento e Balanceamento', category: 'Suspensão', defaultPrice: 120, recallMonths: 12 },
-  { name: 'Revisão Geral', category: 'Revisão', defaultPrice: 300, recallMonths: 12 },
-  { name: 'Troca de Pastilhas de Freio', category: 'Freios', defaultPrice: 200, recallMonths: 12 },
+  { name: 'Troca de Óleo', description: 'Troca de óleo do motor e filtro', price: 150, duration: 60 },
+  { name: 'Alinhamento e Balanceamento', description: 'Alinhamento 3D e balanceamento das 4 rodas', price: 120, duration: 90 },
+  { name: 'Revisão Geral', description: 'Revisão de 40 itens', price: 300, duration: 180 },
+  { name: 'Troca de Pastilhas de Freio', description: 'Substituição das pastilhas dianteiras', price: 200, duration: 120 },
 ];
 
 const parts = [
-  { sku: 'OLEO-5W30', name: 'Óleo Sintético 5W30', unit: 'L', cost: 25, price: 45, stockQty: 50, minQty: 10 },
-  { sku: 'FILTRO-OLEO', name: 'Filtro de Óleo', unit: 'UN', cost: 10, price: 25, stockQty: 30, minQty: 5 },
-  { sku: 'PASTILHA-DIANT', name: 'Pastilha de Freio Dianteira', unit: 'JG', cost: 60, price: 120, stockQty: 15, minQty: 3 },
-  { sku: 'FILTRO-AR', name: 'Filtro de Ar', unit: 'UN', cost: 15, price: 35, stockQty: 20, minQty: 5 },
+  { name: 'Óleo Sintético 5W30', description: 'Óleo para motor', price: 45, stock: 50, minStock: 10 },
+  { name: 'Filtro de Óleo', description: 'Filtro de óleo padrão', price: 25, stock: 30, minStock: 5 },
+  { name: 'Pastilha de Freio Dianteira', description: 'Jogo de pastilhas', price: 120, stock: 15, minStock: 3 },
+  { name: 'Filtro de Ar', description: 'Filtro de ar do motor', price: 35, stock: 20, minStock: 5 },
 ];
 
 async function insertData() {
