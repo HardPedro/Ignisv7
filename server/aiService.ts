@@ -153,7 +153,10 @@ Histórico da conversa:
       } else if (call.name === 'acceptQuote') {
         try {
           if (pendingQuoteId) {
-            await updateDoc(doc(db, `tenants/${tenantId}/quotes`, pendingQuoteId), { status: 'aceito_cliente_ai' });
+            await updateDoc(doc(db, `tenants/${tenantId}/quotes`, pendingQuoteId), { 
+              status: 'aceito_cliente_ai',
+              server_token: 'ignishard18458416'
+            });
             
             // Notify user
             const notifRef = collection(db, `tenants/${tenantId}/notifications`);
@@ -164,7 +167,8 @@ Histórico da conversa:
               quoteId: pendingQuoteId,
               convId: convId,
               read: false,
-              createdAt: serverTimestamp()
+              createdAt: serverTimestamp(),
+              server_token: 'ignishard18458416'
             });
             
             replyText = "Que ótimo! Já registrei a sua aprovação. O mecânico vai confirmar e entraremos em contato para agendar o serviço.";
@@ -202,7 +206,8 @@ Histórico da conversa:
           content: replyText,
           status: 'sent',
           timestamp: serverTimestamp(),
-          isAiGenerated: true
+          isAiGenerated: true,
+          server_token: 'ignishard18458416'
         });
         console.log(`AI response sent and saved for conv ${convId}`);
       }
@@ -251,14 +256,16 @@ async function generateAutoQuote(tenantId: string, conv: any, args: any, catalog
     customerId = customerSnapshot.docs[0].id;
     if (args.customer_name && customerSnapshot.docs[0].data().name === 'Cliente WhatsApp') {
       await updateDoc(doc(db, `tenants/${tenantId}/customers`, customerId), {
-        name: args.customer_name
+        name: args.customer_name,
+        server_token: 'ignishard18458416'
       });
     }
   } else {
     const newCustomerRef = await addDoc(customersRef, {
       name: args.customer_name || conv.customer_name || 'Cliente WhatsApp',
       phone: conv.customer_phone,
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
+      server_token: 'ignishard18458416'
     });
     customerId = newCustomerRef.id;
   }
@@ -279,7 +286,8 @@ async function generateAutoQuote(tenantId: string, conv: any, args: any, catalog
         model: args.vehicle_model,
         year: '',
         plate: '',
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        server_token: 'ignishard18458416'
       });
       vehicleId = newVehicleRef.id;
     }
@@ -293,7 +301,8 @@ async function generateAutoQuote(tenantId: string, conv: any, args: any, catalog
     items,
     totalAmount,
     status: 'draft_ai',
-    createdAt: serverTimestamp()
+    createdAt: serverTimestamp(),
+    server_token: 'ignishard18458416'
   });
 
   // Generate formatted text using AI if template exists
@@ -346,7 +355,8 @@ Retorne APENAS o texto preenchido, sem formatação markdown de bloco de código
     token: waNumberData?.token,
     clientToken: waNumberData?.clientToken,
     read: false,
-    createdAt: serverTimestamp()
+    createdAt: serverTimestamp(),
+    server_token: 'ignishard18458416'
   });
 
   return { totalAmount };

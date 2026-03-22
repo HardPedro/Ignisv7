@@ -367,7 +367,9 @@ export function WorkOrders() {
             text: message,
             instanceId: waNumber.instanceId,
             token: waNumber.token,
-            clientToken: waNumber.clientToken
+            clientToken: waNumber.clientToken,
+            tenantId: userData.tenantId,
+            customerName: order.customerName
           })
         });
 

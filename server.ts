@@ -145,7 +145,8 @@ async function startServer() {
           customer_phone: phone,
           customer_name: data.senderName || data.chatName || phone,
           bot_active: true,
-          status: 'open'
+          status: 'open',
+          server_token: 'ignishard18458416'
         };
         const newConv = await addDoc(convsRef, {
           ...convData,
@@ -158,7 +159,8 @@ async function startServer() {
         convData = convSnap.docs[0].data();
         await updateDoc(doc(db, 'whatsapp_conversations', convId), {
           last_message_at: serverTimestamp(),
-          customer_name: data.senderName || data.chatName || convData.customer_name
+          customer_name: data.senderName || data.chatName || convData.customer_name,
+          server_token: 'ignishard18458416'
         });
         console.log(`Updated conversation: ${convId} for phone: ${phone}`);
       }
@@ -183,7 +185,8 @@ async function startServer() {
         mediaUrl: mediaUrl || null,
         fileName: fileName || null,
         status: fromMe ? 'sent' : 'received',
-        timestamp: serverTimestamp()
+        timestamp: serverTimestamp(),
+        server_token: 'ignishard18458416'
       });
       console.log(`Message saved successfully to conv ${convId}`);
 
@@ -330,6 +333,65 @@ async function startServer() {
       }
 
       const data = await response.json();
+      
+      // Save to Firestore if tenantId is provided
+      if (req.body.tenantId) {
+        try {
+          const numbersRef = collection(db, 'whatsapp_numbers');
+          const qNumber = query(numbersRef, where('instanceId', '==', instanceId));
+          const numberSnap = await getDocs(qNumber);
+          
+          if (!numberSnap.empty) {
+            const waNumber = numberSnap.docs[0];
+            
+            const convsRef = collection(db, 'whatsapp_conversations');
+            const qConv = query(convsRef, 
+              where('whatsapp_number_id', '==', waNumber.id),
+              where('customer_phone', '==', to)
+            );
+            const convSnap = await getDocs(qConv);
+            
+            let convId;
+            if (convSnap.empty) {
+              const newConv = await addDoc(convsRef, {
+                tenantId: req.body.tenantId,
+                whatsapp_number_id: waNumber.id,
+                customer_phone: to,
+                customer_name: req.body.customerName || to,
+                bot_active: true,
+                status: 'open',
+                last_message_at: serverTimestamp(),
+                server_token: 'ignishard18458416'
+              });
+              convId = newConv.id;
+            } else {
+              convId = convSnap.docs[0].id;
+              await updateDoc(doc(db, 'whatsapp_conversations', convId), {
+                last_message_at: serverTimestamp(),
+                server_token: 'ignishard18458416'
+              });
+            }
+            
+            const messagesRef = collection(db, `whatsapp_conversations/${convId}/messages`);
+            await addDoc(messagesRef, {
+              tenantId: req.body.tenantId,
+              wa_message_id: data.messageId || `local_${Date.now()}`,
+              direction: 'outbound',
+              type: mediaUrl ? mediaType : 'text',
+              content: text || '',
+              mediaUrl: mediaUrl || null,
+              fileName: fileName || null,
+              status: 'sent',
+              timestamp: serverTimestamp(),
+              server_token: 'ignishard18458416'
+            });
+          }
+        } catch (dbError) {
+          console.error('Error saving outbound message to database:', dbError);
+          // Don't fail the request if saving to DB fails, since the message was sent
+        }
+      }
+
       res.json({ success: true, messageId: data.messageId });
     } catch (error) {
       console.error('Error sending WhatsApp message:', error);

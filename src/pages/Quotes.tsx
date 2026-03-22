@@ -261,7 +261,9 @@ export function Quotes() {
             text: message,
             instanceId: waNumber.instanceId,
             token: waNumber.token,
-            clientToken: waNumber.clientToken
+            clientToken: waNumber.clientToken,
+            tenantId: userData.tenantId,
+            customerName: quote.customerName
           })
         });
 

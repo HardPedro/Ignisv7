@@ -414,31 +414,13 @@ export function WhatsApp() {
           fileName,
           instanceId: waNumber.instanceId,
           token: waNumber.token,
-          clientToken: waNumber.clientToken
+          clientToken: waNumber.clientToken,
+          tenantId: userData?.tenantId,
+          customerName: selectedConv.customer_name
         }),
       });
       
       if (res.ok) {
-        const data = await res.json();
-        // Save to Firestore
-        const messagesRef = collection(db, `whatsapp_conversations/${selectedConv.id}/messages`);
-        await addDoc(messagesRef, {
-          tenantId: userData?.tenantId,
-          wa_message_id: data.messageId,
-          direction: 'outbound',
-          type: mediaUrl ? mediaType : 'text',
-          content: content,
-          mediaUrl: mediaUrl || null,
-          fileName: fileName || null,
-          status: 'sent',
-          timestamp: serverTimestamp()
-        });
-        
-        // Update conversation
-        await updateDoc(doc(db, 'whatsapp_conversations', selectedConv.id), {
-          last_message_at: serverTimestamp()
-        });
-        
         isSendingRef.current = false;
         setIsSending(false);
       } else {
