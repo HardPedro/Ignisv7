@@ -278,6 +278,7 @@ export function Settings() {
         instanceId: finalInstanceId,
         token: zapiToken,
         clientToken: zapiClientToken,
+        number: 'Z-API Instance',
         phone_number: 'Z-API Instance',
         updatedAt: new Date().toISOString()
       });

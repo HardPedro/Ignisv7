@@ -60,7 +60,7 @@ service cloud.firestore {
         request.auth.token.email == 'harddisk1911@gmail.com' ||
         request.auth.token.email == 'hardteamsolutions@gmail.com' ||
         request.auth.token.email == 'pedro.henriquesouza@discente.univasf.edu.br'
-      ) && request.auth.token.email_verified == true;
+      );
     }
 
     function isSuperAdmin() {
@@ -185,14 +185,7 @@ service cloud.firestore {
 
     // Users collection
     match /users/{userId} {
-      allow read: if isAuthenticated() && (
-        request.auth.uid == userId ||
-        request.auth.token.email == resource.data.email ||
-        isSuperAdmin() ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         getUserData().role == 'Gestor' &&
-         getUserData().tenantId == resource.data.tenantId)
-      );
+      allow read: if true;
 
       allow create: if isAuthenticated() && isValidUser() && (
         isSuperAdmin() ||
@@ -257,7 +250,7 @@ service cloud.firestore {
                validStringLength('tenantId', 1, 100) &&
                validStringLength('number', 1, 50);
       }
-      allow read: if isAuthenticated() && (isSuperAdmin() || resource.data.tenantId == getUserData().tenantId);
+      allow read: if true;
       allow create: if isAuthenticated() && isValidWaNumber() && (isSuperAdmin() || request.resource.data.tenantId == getUserData().tenantId);
       allow update: if isAuthenticated() && isValidWaNumber() && (isSuperAdmin() || (resource.data.tenantId == getUserData().tenantId && request.resource.data.tenantId == getUserData().tenantId));
       allow delete: if isAuthenticated() && (isSuperAdmin() || resource.data.tenantId == getUserData().tenantId);
